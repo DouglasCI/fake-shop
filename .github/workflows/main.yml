@@ -17,9 +17,10 @@ jobs:
         run: echo "Executando o comando Docker Build"
       - name: Envio da Imagem Docker
         run: echo "Executando o comando Docker Push"
-
+  
   cd: # declaracao do job de CD
     runs-on: ubuntu-latest  # ambiente/agente de execucao
+    needs: [ci]  # garante que o job de CD executara apenas depois do job de CI
     steps:
       - name: Autenticar na AWS
         run: echo "Executando o comando AWS Configure"
