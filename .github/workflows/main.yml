@@ -12,16 +12,23 @@ jobs:
     runs-on: ubuntu-latest  # ambiente/agente de execucao
     steps:
       - name: Obter o codigo do projeto 
-        uses: actions/checkout@v4 # uso de uma action para trazer o codigo do repositorio para o ambiente
+        uses: actions/checkout@v4
+        
       - name: Autenticar no Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Construcao da Imagem Docker
-        run: echo "Executando o comando Docker Build"
-      - name: Envio da Imagem Docker
-        run: echo "Executando o comando Docker Push"
+
+      - name: Construcao e envio da Imagem Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src
+          push: true
+          file: ./src/Dockerfile
+          tags: |
+            douglasci/fake-shop:latest
+            douglasci/fake-shop:v${{ github.run_number }}
   
   cd: # declaracao do job de CD
     runs-on: ubuntu-latest  # ambiente/agente de execucao
