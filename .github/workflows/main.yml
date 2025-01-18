@@ -11,8 +11,13 @@ jobs:
   ci: # declaracao do job de CI
     runs-on: ubuntu-latest  # ambiente/agente de execucao
     steps:
+      - name: Obter o codigo do projeto 
+        uses: actions/checkout@v4 # uso de uma action para trazer o codigo do repositorio para o ambiente
       - name: Autenticar no Docker Hub
-        run: echo "Executando o comando Docker Login"
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Construcao da Imagem Docker
         run: echo "Executando o comando Docker Build"
       - name: Envio da Imagem Docker
@@ -20,7 +25,7 @@ jobs:
   
   cd: # declaracao do job de CD
     runs-on: ubuntu-latest  # ambiente/agente de execucao
-    needs: [ci]  # garante que o job de CD executara apenas depois do job de CI
+    needs: [ci]  # garante que o job de CD executa apenas depois do job de CI
     steps:
       - name: Autenticar na AWS
         run: echo "Executando o comando AWS Configure"
