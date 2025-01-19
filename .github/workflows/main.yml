@@ -1,0 +1,60 @@
+name: CI-CD
+
+# gatilhos para disparar a automação
+on:
+  push: 
+    branches: ["main"]  # assim que ocorre um push na branch main
+  workflow_dispatch:  # disparar manualmente
+  
+# sequencia de etapas no workflow
+jobs:
+  ci: # declaracao do job de CI
+    runs-on: ubuntu-latest  # ambiente/agente de execucao
+    steps:
+      - name: Obter o codigo do projeto 
+        uses: actions/checkout@v4
+        
+      - name: Autenticar no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Construcao e envio da Imagem Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src
+          push: true
+          file: ./src/Dockerfile
+          tags: |
+            douglasci/fake-shop:latest
+            douglasci/fake-shop:v${{ github.run_number }}
+  
+  cd: # declaracao do job de CD
+    runs-on: ubuntu-latest  # ambiente/agente de execucao
+    needs: [ci]  # garante que o job de CD executa apenas depois do job de CI
+    permissions:  # permissoes necessarias para a action do k8s deploy
+      id-token: write
+      contents: read
+      actions: read
+    steps:
+      - name: Obter o codigo do projeto 
+        uses: actions/checkout@v4
+
+      - name: Autenticar na AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Configurar o kubectl
+        run: aws eks update-kubeconfig --name aula-eks
+
+      - name: Aplicar os manifestos no Kubernetes
+        uses: Azure/k8s-deploy@v5
+        with:
+          manifests: |
+            ./k8s/deployment.yaml
+          images: |
+            douglasci/fake-shop:v${{ github.run_number }}
